@@ -1,0 +1,39 @@
+name: Shell Script Linter
+
+on: [push, pull_request]
+
+jobs:
+  # Check the syntax of the script
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck
+        run: shellcheck searcher.sh -S warning
+
+  # Integration tests using bats
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bats and bats libs
+        id: setup-bats
+        uses: bats-core/bats-action@3.0.0
+
+      - name: Make the script executable
+        shell: bash
+        run: chmod +x ./searcher.sh
+
+      - name: Run Bats tests
+        shell: bash
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+          TERM: xterm
+        run: bats test/searcher.bats --verbose-run
